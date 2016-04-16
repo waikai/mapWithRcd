@@ -33,7 +33,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
@@ -43,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String TAG = "MainActivity";
     public static AmazonClientManager clientManager = null;
 
-
+    private Boolean found = false;
     private ArrayList<LocalInfo> mLocalInfos;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
@@ -56,18 +55,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Button btnMap;
     Button btnse;
     Button btnRcd;
+    private Object lock;
     // for marker
     MarkerOptions[] mp = new MarkerOptions[10];
-    MarkerOptions m1;
-    MarkerOptions m2;
-    MarkerOptions m3;
-    MarkerOptions m4;
-    MarkerOptions m5;
-    MarkerOptions m6;
-    MarkerOptions m7;
-    MarkerOptions m8;
-    MarkerOptions m9;
-    MarkerOptions m0;
+
     private double currLatitude;
     private double currLongitude;
 //    private DynamoDBManager mDynamoDBManager;
@@ -77,15 +68,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                updata(2, 54);
-            }
-        });
-        thread.start();
+        lock = new Object();
+
+        // init location information
         mLocalInfos = new ArrayList<>();
-        LocalInfo l0 = new LocalInfo(40.746723, -74.188729, 42, 0);
+        LocalInfo l0 = new LocalInfo(40.75368, -74.157532, 42, 0);
         mLocalInfos.add(l0);
         LocalInfo l1 = new LocalInfo(40.7440, -74.1574, 88, 1);
         mLocalInfos.add(l1);
@@ -106,17 +93,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         LocalInfo l9 = new LocalInfo(40.742723, -74.173729, 72, 9);
         mLocalInfos.add(l9);
 
-        mp[1] = new MarkerOptions().position(new LatLng(l1.lat, l1.lng)).title(l1.maxDb.toString()).icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
-        m2 = new MarkerOptions().position(new LatLng(40.7350, -74.1574)).title("80dB");
-        m3 = new MarkerOptions().position(new LatLng(40.7536, -74.1550)).title("42dB");
-        m4 = new MarkerOptions().position(new LatLng(40.7536, -74.1632)).title("42dB").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
-        m5 = new MarkerOptions().position(new LatLng(40.7556, -74.1511)).title("42dB");
-        m6 = new MarkerOptions().position(new LatLng(40.7566, -74.1524)).title("42dB");
-        m7 = new MarkerOptions().position(new LatLng(40.742723, -74.178729)).title("42dB");
-        m8 = new MarkerOptions().position(new LatLng(40.744723, -74.178729)).title("42dB");
-        m9 = new MarkerOptions().position(new LatLng(40.742723, -74.173729)).title("42dB");
-        m0 = new MarkerOptions().position(new LatLng(40.746723, -74.188729)).title("42dB");
+        Thread initthread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for (int i = 1; i <=10; i++) {
+                       int tmp =  getMyV(i);
+                        Log.i("show me this", tmp + "");
+                        mLocalInfos.get(i-1).maxDb = tmp;
+                    }
+                    for (int i=1; i<=10; i++) {
+                        LocalInfo lf = mLocalInfos.get(i-1);
+                        if (lf.maxDb == -1) {
+                            mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title("WE NEED YOU").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
+                        }else {
+                            mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title(lf.maxDb+ " dB");
+                        }
+                    }
+                    synchronized (lock){
+                        found = true;
+                        lock.notify();
+                    }
+
+                }catch (Exception e) {
+                    Exception ne = e;
+                    return;
+                }
+            }
+        });
+        initthread.start();
+
+
+
         // location
+        for (int i=1; i<=10; i++) {
+            LocalInfo lf = mLocalInfos.get(i-1);
+            if (lf.maxDb == -1) {
+                mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title("WE NEED YOU").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
+            }else {
+                mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title(lf.maxDb+ " dB");
+            }
+        }
+
         mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(LocationServices.API).addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
 
 
@@ -139,12 +157,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
+
+
+
+
         btnRcd = (Button)findViewById(R.id.btnHybrid);
         View.OnLongClickListener rec = new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-
-
                 if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
                     Toast.makeText(getApplicationContext(), "media file can find", Toast.LENGTH_LONG).show();
                     return true;
@@ -165,9 +185,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     max = 0;
                     count = 0;
                     recorder.start();
-
                     double db =  updateMicStatus();
-
                     Log.i("i can got value", max+"");
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -190,6 +208,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         recorder.reset();
                         recorder.release();
                         recorder = null;
+                        final int lo = getCurrLo(currLatitude, currLongitude);
+                        Log.i("here is the lo map ", lo+"");
+                        final int currMax = max/count;
+                        Thread upthread = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                update(lo, currMax);
+                            }
+                        });
+                        upthread.start();
+
                     }
                     return true;
                 }
@@ -205,13 +234,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    private int getCurrLo(double currLat, double currLng) {
+        for (LocalInfo lf : mLocalInfos) {
+            if ((int)(currLat*10000) == (int)(lf.lat*10000)){
+                return lf.lab + 1;
+            }
+        }
+        return 1;
+    }
+
+
     private int getMyV(int i) {
         clientManager = new AmazonClientManager(this);
         DynamoDBManager manager = new DynamoDBManager();
         int v = manager.getUserPreference(i).getvoice();
         return v;
     }
-    private void updata(int id, int newV) {
+    private void update(int id, int newV) {
         clientManager = new AmazonClientManager(this);
         DynamoDBManager.insertUsers1(id, newV);
     }
@@ -261,24 +300,39 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //map
     @Override
     public void onMapReady(GoogleMap map) {
-        mapReady = true;
-        mMap = map;
-        mMap.setMyLocationEnabled(true);
-        LatLng newYork = new LatLng(40.7536, -74.1550);
-        CameraPosition target = CameraPosition.builder().target(newYork).zoom(15).tilt(45).build();
-        mMap.addMarker(mp[1]);
-        mMap.addCircle(new CircleOptions().center(new LatLng(40.7350, -74.1574)).radius(150).strokeColor(Color.RED).fillColor(Color.argb(61,255, 0 ,0)));
-        mMap.addCircle(new CircleOptions().center(new LatLng(40.7536, -74.1550)).radius(150).strokeColor(Color.GREEN).fillColor(Color.argb(64, 0, 255,0)));
-        mMap.addMarker(m2);
-        mMap.addMarker(m3);
-        mMap.addMarker(m4);
-        mMap.addMarker(m5);
-        mMap.addMarker(m6);
-        mMap.addMarker(m7);
-        mMap.addMarker(m8);
-        mMap.addMarker(m9);
-        mMap.addMarker(m0);
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(target));
+        synchronized (lock){
+            while (found == false){
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+
+            mapReady = true;
+            mMap = map;
+            mMap.setMyLocationEnabled(true);
+            LatLng newYork = new LatLng(40.7536, -74.1550);
+            CameraPosition target = CameraPosition.builder().target(newYork).zoom(15).tilt(45).build();
+
+            for (int i = 1; i <= 10; i++) {
+                LocalInfo lf = mLocalInfos.get(i - 1);
+                int n = lf.maxDb;
+                if (n >= 60) {
+                    mMap.addMarker(mp[i - 1]);
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.RED).fillColor(Color.argb(61, 255, 0, 0)));
+                } else if (n != -1) {
+                    mMap.addMarker(mp[i - 1]);
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GREEN).fillColor(Color.argb(64, 0, 255, 0)));
+                } else {
+                    mMap.addMarker(mp[i - 1]);
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GRAY).fillColor(Color.argb(64, 128, 128, 128)));
+                }
+            }
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(target));
+
     }
 
     private int BASE = 1;
@@ -291,7 +345,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (ratio > 1) db = 20*Math.log10(ratio);
             max += (int) db;
             count++;
-            Log.d("tag", "fvb" + max);
             mHander.postDelayed(mUpdateMicStatusTimer, SPACE);
             return db;
         }
