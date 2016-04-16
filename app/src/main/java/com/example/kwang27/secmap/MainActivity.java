@@ -6,6 +6,7 @@ import android.media.MediaRecorder;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telecom.Call;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.amazonaws.AmazonClientException;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -30,10 +32,19 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
+
+    // init TAG
+    private static final String TAG = "MainActivity";
+    public static AmazonClientManager clientManager = null;
+
+
+    private ArrayList<LocalInfo> mLocalInfos;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private MediaRecorder recorder;
@@ -45,8 +56,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Button btnMap;
     Button btnse;
     Button btnRcd;
-
     // for marker
+    MarkerOptions[] mp = new MarkerOptions[10];
     MarkerOptions m1;
     MarkerOptions m2;
     MarkerOptions m3;
@@ -59,14 +70,43 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     MarkerOptions m0;
     private double currLatitude;
     private double currLongitude;
-
+//    private DynamoDBManager mDynamoDBManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        m1 = new MarkerOptions().position(new LatLng(40.7440, -74.1574)).title("42dB").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                updata(2, 54);
+            }
+        });
+        thread.start();
+        mLocalInfos = new ArrayList<>();
+        LocalInfo l0 = new LocalInfo(40.746723, -74.188729, 42, 0);
+        mLocalInfos.add(l0);
+        LocalInfo l1 = new LocalInfo(40.7440, -74.1574, 88, 1);
+        mLocalInfos.add(l1);
+        LocalInfo l2 = new LocalInfo(40.7350, -74.1574, 80, 2);
+        mLocalInfos.add(l2);
+        LocalInfo l3 = new LocalInfo(40.7536, -74.1550, 32, 3);
+        mLocalInfos.add(l3);
+        LocalInfo l4 = new LocalInfo(40.7536, -74.1632, 50, 4);
+        mLocalInfos.add(l4);
+        LocalInfo l5 = new LocalInfo(40.7556, -74.1511, 60, 5);
+        mLocalInfos.add(l5);
+        LocalInfo l6 = new LocalInfo(40.7566, -74.1524, 43, 6);
+        mLocalInfos.add(l6);
+        LocalInfo l7 = new LocalInfo(40.742723, -74.178729, 44, 7);
+        mLocalInfos.add(l7);
+        LocalInfo l8 = new LocalInfo(40.744723, -74.178729, 48, 8);
+        mLocalInfos.add(l8);
+        LocalInfo l9 = new LocalInfo(40.742723, -74.173729, 72, 9);
+        mLocalInfos.add(l9);
+
+        mp[1] = new MarkerOptions().position(new LatLng(l1.lat, l1.lng)).title(l1.maxDb.toString()).icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
         m2 = new MarkerOptions().position(new LatLng(40.7350, -74.1574)).title("80dB");
         m3 = new MarkerOptions().position(new LatLng(40.7536, -74.1550)).title("42dB");
         m4 = new MarkerOptions().position(new LatLng(40.7536, -74.1632)).title("42dB").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
@@ -165,6 +205,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    private int getMyV(int i) {
+        clientManager = new AmazonClientManager(this);
+        DynamoDBManager manager = new DynamoDBManager();
+        int v = manager.getUserPreference(i).getvoice();
+        return v;
+    }
+    private void updata(int id, int newV) {
+        clientManager = new AmazonClientManager(this);
+        DynamoDBManager.insertUsers1(id, newV);
+    }
+
 
     @Override
     protected void onStart() {
@@ -215,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.setMyLocationEnabled(true);
         LatLng newYork = new LatLng(40.7536, -74.1550);
         CameraPosition target = CameraPosition.builder().target(newYork).zoom(15).tilt(45).build();
-        mMap.addMarker(m1);
+        mMap.addMarker(mp[1]);
         mMap.addCircle(new CircleOptions().center(new LatLng(40.7350, -74.1574)).radius(150).strokeColor(Color.RED).fillColor(Color.argb(61,255, 0 ,0)));
         mMap.addCircle(new CircleOptions().center(new LatLng(40.7536, -74.1550)).radius(150).strokeColor(Color.GREEN).fillColor(Color.argb(64, 0, 255,0)));
         mMap.addMarker(m2);
@@ -229,8 +280,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.addMarker(m0);
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(target));
     }
-
-
 
     private int BASE = 1;
     private int SPACE = 100;
@@ -259,13 +308,3 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 }
-
-
-
-
-
-
-
-
-
-
