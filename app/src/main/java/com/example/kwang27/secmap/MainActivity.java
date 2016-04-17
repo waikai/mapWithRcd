@@ -1,5 +1,6 @@
 package com.example.kwang27.secmap;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
 import android.media.MediaRecorder;
@@ -29,11 +30,21 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.yelp.clientlib.connection.YelpAPI;
+import com.yelp.clientlib.connection.YelpAPIFactory;
+import com.yelp.clientlib.entities.Business;
+import com.yelp.clientlib.entities.Deal;
+import com.yelp.clientlib.entities.SearchResponse;
+import com.yelp.clientlib.entities.options.BoundingBoxOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+
+import retrofit.Response;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
@@ -50,14 +61,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private File myFile;
     private int max;
     private int count;
-    GoogleMap mMap;
+    private Response<SearchResponse> response;
+    private ArrayList<Business> business;
+    private Business rmBusiness;
+    private double userLatitude;
+    private double userLongitude;
+    private GoogleMap mMap;
     boolean mapReady=false;
-    Button btnMap;
-    Button btnse;
-    Button btnRcd;
+    private Button btnMap;
+    private Button btnse;
+    private Button btnRcd;
     private Object lock;
     // for marker
-    MarkerOptions[] mp = new MarkerOptions[10];
+    private MarkerOptions[] mp = new MarkerOptions[10];
 
     private double currLatitude;
     private double currLongitude;
@@ -186,7 +202,40 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     count = 0;
                     recorder.start();
                     double db =  updateMicStatus();
-                    Log.i("i can got value", max+"");
+                    new Thread(new Runnable(){
+
+                        @Override
+                        public void run() {
+                            userLatitude = currLatitude;
+                            userLongitude = currLongitude;
+
+                            double boundVar = 0.015;
+
+                            BoundingBoxOptions bounds = BoundingBoxOptions.builder()
+                                    .swLatitude(userLatitude - boundVar).swLongitude(userLongitude - boundVar)
+                                    .neLatitude(userLatitude + boundVar).neLongitude(userLongitude + boundVar).build();
+                            YelpAPIFactory apiFactory = new YelpAPIFactory("xK9j0pwr7D41XNvbLp6T-Q", "lMGEVb8SAgdDurSz93bTgfArM14",
+                                    "PVdMOZycbckRD5YZgcxITlbmek4uIo6Y", "GnuITPnq0sSZ4TRqbcAreYc81Oc");
+
+                            YelpAPI yelpAPI = apiFactory.createAPI();
+
+                            Map<String, String> params = new HashMap<String, String>();
+                            params.put("term", "food");
+                            params.put("deals_filter", "true");
+
+                            retrofit.Call<SearchResponse> call = yelpAPI.search(bounds, params);
+
+                            try {
+                                response = call.execute();
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+
+                        }
+                    }).start();
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -219,6 +268,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         });
                         upthread.start();
 
+                    }
+                    business = response.body().businesses();
+                    if (business != null){
+                        Intent intent = new Intent(getApplicationContext(), searchPageActivity.class);
+                        //intent.putExtra("business", business);
+
+                        Random rm = new Random();
+                        rmBusiness =  business.get(rm.nextInt(business.size()));
+                        ArrayList<Deal> deals = rmBusiness.deals();
+                        String dealTitle = deals.get(rm.nextInt(deals.size())).title();
+                        String dealInfo = deals.get(rm.nextInt(deals.size())).whatYouGet();
+                        String rating = rmBusiness.rating().toString();
+                        double busLatitude = rmBusiness.location().coordinate().latitude();
+                        double busLongitude = rmBusiness.location().coordinate().longitude();
+
+
+                        intent.putExtra("rating", rating);
+                        intent.putExtra("name", rmBusiness.name());
+                        intent.putExtra("imageUrl", rmBusiness.imageUrl());
+                        intent.putExtra("dealTitle", dealTitle);
+                        intent.putExtra("dealInfo", dealInfo);
+                        intent.putExtra("userLatitude", Double.toString(userLatitude));
+                        intent.putExtra("userLongitude", Double.toString(userLongitude));
+                        intent.putExtra("busLatitude", Double.toString(busLatitude));
+                        intent.putExtra("busLongitude", Double.toString(busLongitude));
+
+                        startActivity(intent);
                     }
                     return true;
                 }
