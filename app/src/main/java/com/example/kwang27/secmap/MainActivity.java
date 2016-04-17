@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private double currLatitude;
     private double currLongitude;
-//    private DynamoDBManager mDynamoDBManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -209,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             userLatitude = currLatitude;
                             userLongitude = currLongitude;
 
-                            double boundVar = 0.015;
+                            double boundVar = 0.000005;
 
                             BoundingBoxOptions bounds = BoundingBoxOptions.builder()
                                     .swLatitude(userLatitude - boundVar).swLongitude(userLongitude - boundVar)
@@ -282,8 +281,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         String rating = rmBusiness.rating().toString();
                         double busLatitude = rmBusiness.location().coordinate().latitude();
                         double busLongitude = rmBusiness.location().coordinate().longitude();
-
-
                         intent.putExtra("rating", rating);
                         intent.putExtra("name", rmBusiness.name());
                         intent.putExtra("imageUrl", rmBusiness.imageUrl());
@@ -293,7 +290,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         intent.putExtra("userLongitude", Double.toString(userLongitude));
                         intent.putExtra("busLatitude", Double.toString(busLatitude));
                         intent.putExtra("busLongitude", Double.toString(busLongitude));
-
                         startActivity(intent);
                     }
                     return true;
@@ -302,9 +298,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         };
         btnRcd.setOnTouchListener(endRec);
-
-
-
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
@@ -386,7 +379,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
         }
-
             mapReady = true;
             mMap = map;
             mMap.setMyLocationEnabled(true);
@@ -396,15 +388,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             for (int i = 1; i <= 10; i++) {
                 LocalInfo lf = mLocalInfos.get(i - 1);
                 int n = lf.maxDb;
-                if (n >= 60) {
+                if (n >= 80) {
                     mMap.addMarker(mp[i - 1]);
-                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.RED).fillColor(Color.argb(61, 255, 0, 0)));
-                } else if (n != -1) {
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.RED).fillColor(Color.argb(180, 255, 0, 0)));
+                }else if (n < 80 && n >= 60) {
                     mMap.addMarker(mp[i - 1]);
-                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GREEN).fillColor(Color.argb(64, 0, 255, 0)));
-                } else {
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.argb(128, 255, 0, 0)).fillColor(Color.argb(128, 255, 0, 0)));
+                } else if (n < 60 && n > 40) {
                     mMap.addMarker(mp[i - 1]);
-                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GRAY).fillColor(Color.argb(64, 128, 128, 128)));
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.argb(120, 168, 187, 75)).fillColor(Color.argb(100, 168, 187, 75)));
+
+                } else if(n != -1){
+                    mMap.addMarker(mp[i - 1]);
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GREEN).fillColor(Color.argb(100, 0, 255, 58)));
+                }else {
+                    mMap.addMarker(mp[i - 1]);
+                    mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GRAY).fillColor(Color.argb(128, 128, 128, 128)));
                 }
             }
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(target));
@@ -425,7 +424,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             return db;
         }
         return 0;
-
     }
     private final android.os.Handler mHander = new android.os.Handler();
     private Runnable mUpdateMicStatusTimer = new Runnable() {

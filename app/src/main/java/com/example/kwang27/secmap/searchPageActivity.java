@@ -28,7 +28,7 @@ public class searchPageActivity extends AppCompatActivity {
         TextView dealLink = (TextView)findViewById(R.id.dealLink);
         dealLink.setMovementMethod(LinkMovementMethod.getInstance());
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         Intent intent = getIntent();
 
@@ -74,6 +74,4 @@ public class searchPageActivity extends AppCompatActivity {
         Log.i("my res:  ", myR+"");
         return myR;
     }
-
-
 }
