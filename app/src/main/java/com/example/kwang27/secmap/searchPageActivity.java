@@ -7,19 +7,20 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
 
 public class searchPageActivity extends AppCompatActivity {
 
+    private Button mButton;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_page);
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
         TextView business_TitleTv = (TextView)findViewById(R.id.business_Title);
         TextView dealTitleTv = (TextView)findViewById(R.id.dealTitle);
         TextView distTv = (TextView)findViewById(R.id.distTv);
@@ -27,21 +28,18 @@ public class searchPageActivity extends AppCompatActivity {
         TextView ratingTv = (TextView)findViewById(R.id.ratingTv);
         TextView dealLink = (TextView)findViewById(R.id.dealLink);
         dealLink.setMovementMethod(LinkMovementMethod.getInstance());
-
-//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
+        mButton = (Button)findViewById(R.id.backButton);
         Intent intent = getIntent();
-
         String name = intent.getStringExtra("name");
         final String imageUrl = intent.getStringExtra("imageUrl");
-        String dealTitle = intent.getStringExtra("dealTitle");
+        final String dealTitle = intent.getStringExtra("dealTitle");
         String dealInfo = intent.getStringExtra("dealInfo");
         String rating = intent.getStringExtra("rating");
 
         double userLatitude = Double.parseDouble(intent.getStringExtra("userLatitude"));
         double userLongitude = Double.parseDouble(intent.getStringExtra("userLongitude"));
-        double busLatitude = Double.parseDouble(intent.getStringExtra("busLatitude"));
-        double busLongitude = Double.parseDouble(intent.getStringExtra("busLongitude"));
+        final double busLatitude = Double.parseDouble(intent.getStringExtra("busLatitude"));
+        final double busLongitude = Double.parseDouble(intent.getStringExtra("busLongitude"));
 
         double dist = distance(userLatitude, userLongitude, busLatitude, busLongitude, "M");
         DecimalFormat df2 = new DecimalFormat("#.0");
@@ -60,6 +58,16 @@ public class searchPageActivity extends AppCompatActivity {
         final WebView business_ImageWv = (WebView)findViewById(R.id.business_Image);
 
         business_ImageWv.loadUrl(imageUrl);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                intent.putExtra("busLatitude", Double.toString(busLatitude));
+                intent.putExtra("busLongitude", Double.toString(busLongitude));
+                intent.putExtra("dealTitle", dealTitle);
+                startActivity(intent);
+            }
+        });
     }
 
     private static double distance(double lat1, double lon1, double lat2, double lon2, String unit) {

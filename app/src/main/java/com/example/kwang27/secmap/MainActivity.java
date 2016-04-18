@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Object lock;
     // for marker
     private MarkerOptions[] mp = new MarkerOptions[10];
+    private MarkerOptions yelpMarker;
 
     private double currLatitude;
     private double currLongitude;
@@ -107,11 +108,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mLocalInfos.add(l8);
         LocalInfo l9 = new LocalInfo(40.742723, -74.173729, 72, 9);
         mLocalInfos.add(l9);
-
+        Intent backIntent = getIntent();
+        if (backIntent.getExtras() != null) {
+            String dealTitle = backIntent.getStringExtra("dealTitle");
+            double busLatitude = Double.parseDouble(backIntent.getStringExtra("busLatitude"));
+            double busLongitude = Double.parseDouble(backIntent.getStringExtra("busLongitude"));
+            yelpMarker = new MarkerOptions().position(new LatLng(busLatitude,busLongitude)).title(dealTitle);
+        }
         Thread initthread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
+                    found = false;
                     for (int i = 1; i <=10; i++) {
                        int tmp =  getMyV(i);
                         Log.i("show me this", tmp + "");
@@ -290,6 +298,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         intent.putExtra("userLongitude", Double.toString(userLongitude));
                         intent.putExtra("busLatitude", Double.toString(busLatitude));
                         intent.putExtra("busLongitude", Double.toString(busLongitude));
+                        // try to make a new mark in the map
                         startActivity(intent);
                     }
                     return true;
@@ -395,17 +404,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mMap.addMarker(mp[i - 1]);
                     mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.argb(128, 255, 0, 0)).fillColor(Color.argb(128, 255, 0, 0)));
                 } else if (n < 60 && n > 40) {
-                    mMap.addMarker(mp[i - 1]);
+                    mMap.addMarker(mp[i - 1].icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
                     mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.argb(120, 168, 187, 75)).fillColor(Color.argb(100, 168, 187, 75)));
 
                 } else if(n != -1){
-                    mMap.addMarker(mp[i - 1]);
+                    mMap.addMarker(mp[i - 1].icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                     mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GREEN).fillColor(Color.argb(100, 0, 255, 58)));
                 }else {
                     mMap.addMarker(mp[i - 1]);
                     mMap.addCircle(new CircleOptions().center(new LatLng(lf.lat, lf.lng)).radius(120).strokeColor(Color.GRAY).fillColor(Color.argb(128, 128, 128, 128)));
                 }
             }
+        if (yelpMarker != null) {
+            mMap.addMarker(yelpMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.yelp)));
+        }
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(target));
 
     }
