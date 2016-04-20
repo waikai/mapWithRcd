@@ -89,22 +89,22 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="Small Text"
-        android:id="@+id/dealLink"
-        android:layout_below="@+id/dealInfo"
-        android:autoLink="all"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:text="Small Text"
         android:id="@+id/distTv"
         android:textSize="13dp"
         android:layout_below="@+id/ratingTv"
         android:layout_alignRight="@+id/scrollView"
         android:layout_alignEnd="@+id/scrollView" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get it NOW!"
+        android:id="@+id/dealLink"
+        android:textSize="30dp"
+        android:textAlignment="center"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/dealInfo" />
 
     <Button
         android:layout_width="match_parent"

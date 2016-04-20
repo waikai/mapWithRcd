@@ -128,7 +128,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     for (int i=1; i<=10; i++) {
                         LocalInfo lf = mLocalInfos.get(i-1);
                         if (lf.maxDb == -1) {
-                            mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title("WE NEED YOU").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
+                            mp[i - 1] = new MarkerOptions()
+                                    .position(new LatLng(lf.lat, lf.lng))
+                                    .title("WE NEED YOU").icon(BitmapDescriptorFactory.fromResource(R.drawable.q));
                         }else {
                             mp[i - 1] = new MarkerOptions().position(new LatLng(lf.lat, lf.lng)).title(lf.maxDb+ " dB");
                         }
